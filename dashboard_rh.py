@@ -162,7 +162,7 @@ with col_logo:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Logo_Governo_MG.svg/320px-Logo_Governo_MG.svg.png", width=180)
 with col_title:
     st.markdown("""
-    <h1 style="margin-top: 1rem; margin-bottom: 0.2rem;">PAINEL ESTATÍSTICO DE PESSOAL - VERSÃO TESTE</h1>
+    <h1 style="margin-top: 1rem; margin-bottom: 0.2rem;">PAINEL DCGFT - VERSÃO TESTE</h1>
     <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Dados Funcionais - Vínculo</p>
     """, unsafe_allow_html=True)
 
