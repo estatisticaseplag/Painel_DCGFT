@@ -7,7 +7,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (CORREÇÃO DEFINITIVA DOS CARDS) ─────────
+# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (TRADUÇÃO "SELECT ALL" + CARDS RESPONSIVOS)
 def setup_page():
     st.set_page_config(
         page_title="Painel DCGFT - Lotação",
@@ -24,7 +24,7 @@ def setup_page():
         
         .main { background-color: #f5f5f5; }
         
-        /* ── CORREÇÃO DEFINITIVA DO TEXTO CORTADO NOS CARDS (ST.METRIC) ── */
+        /* ── CORREÇÃO DO TEXTO CORTADO NOS CARDS (ST.METRIC) ── */
         [data-testid="stMetric"] { 
             background: white; 
             border-radius: 8px; 
@@ -35,7 +35,6 @@ def setup_page():
             min-width: 0 !important;
         }
 
-        /* Alvo direto nos elementos de texto do rótulo */
         [data-testid="stMetricLabel"],
         [data-testid="stMetricLabel"] *,
         div[data-testid="stMetricLabel"] p { 
@@ -50,7 +49,6 @@ def setup_page():
             line-height: 1.2 !important;
         }
 
-        /* Alvo direto no valor numérico */
         [data-testid="stMetricValue"],
         [data-testid="stMetricValue"] * {
             color: #D2691E !important;
@@ -88,7 +86,6 @@ def setup_page():
             background-color: rgba(255,255,255,0.15);
         }
 
-        /* Ajuste visual para campos de busca na Sidebar */
         div[data-baseweb="select"] input::placeholder {
             color: rgba(255, 255, 255, 0.7) !important;
         }
@@ -105,7 +102,35 @@ def setup_page():
         .stDownloadButton button:hover {
             background-color: #B8551A;
         }
+
+        /* ── TRADUÇÃO DO 'SELECT ALL' NO DROPDOWN ── */
+        div[data-baseweb="popover"] ul li:first-child span,
+        div[data-baseweb="popover"] [role="option"]:first-child span {
+            font-size: 0 !important;
+        }
+        div[data-baseweb="popover"] ul li:first-child span::before,
+        div[data-baseweb="popover"] [role="option"]:first-child span::before {
+            content: "Selecionar todos" !important;
+            font-size: 0.85rem !important;
+            color: #333 !important;
+            visibility: visible !important;
+            display: inline-block !important;
+        }
     </style>
+    
+    <script>
+        // Tradução dinâmica em tempo de execução para os menus do Streamlit
+        const translateSelectAll = () => {
+            const elements = window.parent.document.querySelectorAll('div[data-baseweb="popover"] *');
+            elements.forEach(el => {
+                if (el.children.length === 0 && el.textContent.trim() === 'Select all') {
+                    el.textContent = 'Selecionar todos';
+                }
+            });
+        };
+        const observer = new MutationObserver(translateSelectAll);
+        observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    </script>
     """, unsafe_allow_html=True)
 
 # ── 2. CARREGAMENTO DE DADOS (BASE DE LOTAÇÃO) ──────────────────────────────
