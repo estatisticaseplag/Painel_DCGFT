@@ -7,10 +7,10 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (CARD SEM CORTE E SEM IMAGENS QUEBRADAS) ──
+# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (CORREÇÃO DEFINITIVA DOS CARDS) ─────────
 def setup_page():
     st.set_page_config(
-        page_title="Painel DCGFT",
+        page_title="Painel DCGFT - Lotação",
         page_icon="🏛️",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -24,31 +24,39 @@ def setup_page():
         
         .main { background-color: #f5f5f5; }
         
-        /* ── CARDS DE KPI (CORREÇÃO DE TEXTO CORTADO) ── */
-        .stMetric { 
+        /* ── CORREÇÃO DEFINITIVA DO TEXTO CORTADO NOS CARDS (ST.METRIC) ── */
+        [data-testid="stMetric"] { 
             background: white; 
             border-radius: 8px; 
-            padding: 12px 14px !important; 
+            padding: 10px 12px !important; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
             border: 1px solid #e8e8e8;
             border-left: 4px solid #D2691E;
+            min-width: 0 !important;
         }
-        .stMetric label { 
+
+        /* Alvo direto nos elementos de texto do rótulo */
+        [data-testid="stMetricLabel"],
+        [data-testid="stMetricLabel"] *,
+        div[data-testid="stMetricLabel"] p { 
             font-size: 0.72rem !important; 
-            color: #666;
-            font-weight: 600;
-            text-transform: uppercase;
-            white-space: normal !important; /* Permite quebra de linha se necessário */
-            word-wrap: break-word !important;
+            color: #666 !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            white-space: normal !important;
+            word-break: break-word !important;
             overflow: visible !important;
-            text-overflow: clip !important;
+            text-overflow: unset !important;
             line-height: 1.2 !important;
         }
-        .stMetric [data-testid="stMetricValue"] {
-            color: #D2691E;
-            font-weight: 700;
-            font-size: clamp(1.05rem, 1.25vw, 1.5rem) !important;
-            white-space: nowrap;
+
+        /* Alvo direto no valor numérico */
+        [data-testid="stMetricValue"],
+        [data-testid="stMetricValue"] * {
+            color: #D2691E !important;
+            font-weight: 700 !important;
+            font-size: clamp(0.95rem, 1.15vw, 1.4rem) !important;
+            white-space: nowrap !important;
         }
         
         h1 { 
@@ -105,20 +113,17 @@ def setup_page():
 def load_data(path="BASE_LOTACAO.xlsx"):
     df = pd.read_excel(path)
     
-    # Padronização do nome da coluna de instituição para Lotação
     if "DS_SIGLA_INST_LOTACAO" in df.columns:
         df["DS_SIGLA_INST_DOTACAO"] = df["DS_SIGLA_INST_LOTACAO"]
     elif "DS_SIGLA_INST_DOTACAO" in df.columns:
         df["DS_SIGLA_INST_LOTACAO"] = df["DS_SIGLA_INST_DOTACAO"]
     
-    # Extração matemática de Ano e Mês (Alta Performance)
     df["ANO"] = (df["NR_ANO_MES_REF"] // 100).astype("int16")
     df["MES"] = (df["NR_ANO_MES_REF"] % 100).astype("int8")
     
     df["ANO_MES_STR"] = df["ANO"].astype(str) + "/" + df["MES"].astype(str).str.zfill(2)
     df["ANO_MES_STR"] = df["ANO_MES_STR"].astype("category")
     
-    # Otimização de memória RAM
     colunas_categoricas = [
         "DS_SIGLA_CARREIRA", "DS_SIGLA_INST_LOTACAO", "DS_SIGLA_INST_DOTACAO",
         "SIT_FUNCIONAL_AGRUPADA_REV", "SIT_SERVIDOR_AGRUPADA", 
@@ -219,7 +224,7 @@ def render_kpis(dff, total_linhas):
     n_carreiras = dff["DS_NOME_CARREIRA"].nunique()
 
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("👤 Total Servidores", f"{total_servidores:,.0f}")
+    c1.metric("👤 Servidores", f"{total_servidores:,.0f}")
     c2.metric("🏛️ Órgãos", f"{n_orgaos}")
     c3.metric("📋 Carreiras", f"{n_carreiras}")
     c4.metric("⏱️ CH Total (h)", f"{total_ch:,.0f}")
@@ -229,7 +234,6 @@ def render_kpis(dff, total_linhas):
 
 # ── 5. GRÁFICOS ─────────────────────────────────────────────────────────────
 def render_charts(dff):
-    # Linha 1: Evolução Temporal + Situação Funcional
     col1, col2 = st.columns([3, 2])
     with col1:
         st.subheader("📈 Evolução de Servidores por Mês/Ano")
@@ -257,7 +261,6 @@ def render_charts(dff):
         )
         st.plotly_chart(fig_sit, use_container_width=True)
 
-    # Linha 2: Evolução de Carga Horária
     st.subheader("⏱️ Evolução de Carga Horária por Mês/Ano")
     evol_ch = dff.groupby("ANO_MES_STR", observed=True)["SUM_CH_FINAL"].sum().reset_index().sort_values("ANO_MES_STR")
     fig_evol_ch = px.line(
@@ -270,7 +273,6 @@ def render_charts(dff):
 
     st.divider()
 
-    # Linha 3: Situação do Servidor
     st.subheader("👔 Por Situação do Servidor")
     sit_serv_agg = dff.groupby("SIT_SERVIDOR_AGRUPADA", observed=True)["COUNT_NR_MASP_ADM"].sum().reset_index()
     fig_serv = px.bar(
