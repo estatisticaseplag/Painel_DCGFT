@@ -7,7 +7,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (RESPONSIVO E TRADUZIDO) ────────────────
+# ── 1. CONFIGURAÇÃO DA PÁGINA E CSS (CARD SEM CORTE E SEM IMAGENS QUEBRADAS) ──
 def setup_page():
     st.set_page_config(
         page_title="Painel DCGFT - Lotação",
@@ -24,38 +24,38 @@ def setup_page():
         
         .main { background-color: #f5f5f5; }
         
-        /* ── CARDS DE KPI RESPONSIVOS (CORREÇÃO PARA MACBOOK E TELAS MENORES) ── */
+        /* ── CARDS DE KPI (CORREÇÃO DE TEXTO CORTADO) ── */
         .stMetric { 
             background: white; 
             border-radius: 8px; 
-            padding: 10px 14px !important; 
+            padding: 12px 14px !important; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
             border: 1px solid #e8e8e8;
             border-left: 4px solid #D2691E;
         }
         .stMetric label { 
-            font-size: 0.70rem !important; 
+            font-size: 0.72rem !important; 
             color: #666;
-            font-weight: 500;
+            font-weight: 600;
             text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal !important; /* Permite quebra de linha se necessário */
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            line-height: 1.2 !important;
         }
         .stMetric [data-testid="stMetricValue"] {
             color: #D2691E;
             font-weight: 700;
-            font-size: clamp(1.1rem, 1.3vw, 1.6rem) !important;
+            font-size: clamp(1.05rem, 1.25vw, 1.5rem) !important;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
         
         h1 { 
             color: #2d2d2d;
             font-weight: 700;
             font-size: 1.8rem;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.2rem;
         }
         
         h3 {
@@ -135,13 +135,8 @@ def load_data(path="BASE_LOTACAO.xlsx"):
         
     return df
 
-# ── 3. FILTROS DA SIDEBAR (TEXTOS EM PORTUGUÊS) ─────────────────────────────
+# ── 3. FILTROS DA SIDEBAR ───────────────────────────────────────────────────
 def render_sidebar_filters(df):
-    st.sidebar.markdown("""
-    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Brasão_de_Minas_Gerais.svg/120px-Brasão_de_Minas_Gerais.svg.png" width="70">
-    </div>
-    """, unsafe_allow_html=True)
     st.sidebar.markdown("### 🔍 Filtros", unsafe_allow_html=True)
 
     filtros = {}
@@ -203,14 +198,10 @@ def apply_filters(df, filtros):
 
 # ── 4. CABEÇALHO E KPIS ─────────────────────────────────────────────────────
 def render_kpis(dff, total_linhas):
-    col_logo, col_title = st.columns([1, 5])
-    with col_logo:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Logo_Governo_MG.svg/320px-Logo_Governo_MG.svg.png", width=180)
-    with col_title:
-        st.markdown("""
-        <h1 style="margin-top: 1rem; margin-bottom: 0.2rem;">PAINEL DCGFT - VERSÃO TESTE</h1>
-        <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Dados Funcionais - Lotação</p>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+    <h1 style="margin-top: 0.2rem; margin-bottom: 0.2rem;">PAINEL DCGFT - VERSÃO TESTE</h1>
+    <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Dados Funcionais - Lotação</p>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
     st.caption(f"📊 Base: {len(dff):,.0f} registros filtrados de {total_linhas:,.0f} totais")
@@ -236,7 +227,7 @@ def render_kpis(dff, total_linhas):
 
     st.divider()
 
-# ── 5. GRÁFICOS (SEM TOP 15 E TOP 20) ───────────────────────────────────────
+# ── 5. GRÁFICOS ─────────────────────────────────────────────────────────────
 def render_charts(dff):
     # Linha 1: Evolução Temporal + Situação Funcional
     col1, col2 = st.columns([3, 2])
