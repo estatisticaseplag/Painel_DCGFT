@@ -25,6 +25,18 @@ def fmt_pct_br(val, decimals=1):
         return "-"
     return f"{val:,.{decimals}f}%".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def encontrar_arquivo(possiveis_nomes):
+    """Procura o arquivo na pasta ignorando diferenças entre maiúsculas e minúsculas."""
+    try:
+        arquivos_dir = os.listdir(".")
+        mapa_lower = {f.lower(): f for f in arquivos_dir}
+        for nome in possiveis_nomes:
+            if nome.lower() in mapa_lower:
+                return mapa_lower[nome.lower()]
+    except Exception:
+        pass
+    return None
+
 # ── 1. CONFIGURAÇÃO DA PÁGINA E CSS ─────────────────────────────────────────
 def setup_page():
     st.set_page_config(
@@ -107,17 +119,23 @@ def setup_page():
         }
         
         /* ── SIDEBAR LARANJA E MENU DE NAVEGAÇÃO ── */
+        section[data-testid="stSidebar"],
         div[data-testid="stSidebar"] { 
-            background: linear-gradient(180deg, #D2691E 0%, #C85A17 100%);
+            background: linear-gradient(180deg, #D2691E 0%, #C85A17 100%) !important;
         }
+        section[data-testid="stSidebar"] *,
         div[data-testid="stSidebar"] * { color: white !important; }
+
+        section[data-testid="stSidebar"] .stSelectbox label,
+        section[data-testid="stSidebar"] .stMultiSelect label,
         div[data-testid="stSidebar"] .stSelectbox label,
         div[data-testid="stSidebar"] .stMultiSelect label { 
             color: white !important;
             font-weight: 500;
         }
+        section[data-testid="stSidebar"] [data-baseweb="select"],
         div[data-testid="stSidebar"] [data-baseweb="select"] {
-            background-color: rgba(255,255,255,0.15);
+            background-color: rgba(255,255,255,0.15) !important;
         }
 
         div[data-baseweb="select"] input::placeholder {
@@ -125,9 +143,11 @@ def setup_page():
         }
 
         /* Estilo dos botões do Menu de Navegação */
+        section[data-testid="stSidebar"] [data-testid="stRadio"] > div,
         div[data-testid="stSidebar"] [data-testid="stRadio"] > div {
             gap: 0.4rem;
         }
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label,
         div[data-testid="stSidebar"] [data-testid="stRadio"] label {
             background-color: rgba(255, 255, 255, 0.14);
             padding: 0.55rem 0.8rem;
@@ -137,6 +157,7 @@ def setup_page():
             transition: background-color 0.2s ease;
             cursor: pointer;
         }
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover,
         div[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
             background-color: rgba(255, 255, 255, 0.26);
         }
@@ -279,9 +300,10 @@ def apply_filters_lotacao(df, filtros):
     return df[mask].copy()
 
 def page_lotacao():
-    try:
-        df = load_data_lotacao("BASE_LOTACAO.xlsx")
-    except FileNotFoundError:
+    arquivo_lot = encontrar_arquivo(["BASE_LOTACAO.xlsx", "BASE LOTACAO.xlsx"])
+    if arquivo_lot:
+        df = load_data_lotacao(arquivo_lot)
+    else:
         uploaded = st.file_uploader("📂 Selecione o arquivo BASE_LOTACAO.xlsx", type=["xlsx"], key="up_lotacao")
         if uploaded:
             df = load_data_lotacao(uploaded)
@@ -424,12 +446,13 @@ def load_data_magisterio(source):
     ref_str = df["DT_ANO_MES_REF"].astype(str).str.strip()
     if ref_str.str.contains("/").any():
         partes = ref_str.str.split("/", expand=True)
-        df["ANO"] = partes[0].astype(int)
-        df["MES"] = partes[1].astype(int)
+        df["ANO"] = pd.to_numeric(partes[0], errors="coerce").fillna(0).astype(int)
+        df["MES"] = pd.to_numeric(partes[1], errors="coerce").fillna(0).astype(int)
     else:
-        df["ANO"] = (pd.to_numeric(ref_str) // 100).astype(int)
-        df["MES"] = (pd.to_numeric(ref_str) % 100).astype(int)
+        df["ANO"] = (pd.to_numeric(ref_str, errors="coerce").fillna(0) // 100).astype(int)
+        df["MES"] = (pd.to_numeric(ref_str, errors="coerce").fillna(0) % 100).astype(int)
 
+    df = df[df["ANO"] > 0].copy()
     df["PERIODO"] = df["ANO"].astype(str) + "/" + df["MES"].astype(str).str.zfill(2)
     df["MES_NOME"] = df["MES"].map(MESES_PT)
 
@@ -447,11 +470,7 @@ def page_magisterio():
     """, unsafe_allow_html=True)
     st.markdown("---")
 
-    arquivo_encontrado = None
-    for nome_arquivo in ["BASE_PAINEL.xlsx", "BASE PAINEL.xlsx"]:
-        if os.path.exists(nome_arquivo):
-            arquivo_encontrado = nome_arquivo
-            break
+    arquivo_encontrado = encontrar_arquivo(["BASE_PAINEL.xlsx", "BASE PAINEL.xlsx"])
 
     if arquivo_encontrado:
         df_mag = load_data_magisterio(arquivo_encontrado)
@@ -713,7 +732,7 @@ def page_magisterio():
     st.dataframe(tabela_hist_final, use_container_width=True, hide_index=True, height=400)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PÁGINA 3: CONTRATOS TEMPORÁRIOS - GERAL (HISTORICO.XLSX)
+# PÁGINA 3: ÍNDICE 35% - CONTRATOS (HISTORICO.XLSX)
 # ══════════════════════════════════════════════════════════════════════════════
 @st.cache_data(show_spinner="Carregando base histórica de Contratos Temporários…")
 def load_data_contratos_geral(source):
@@ -722,9 +741,17 @@ def load_data_contratos_geral(source):
     df = pd.read_excel(xl, sheet_name=sheet)
     df.columns = [str(c).strip() for c in df.columns]
 
-    ref_num = pd.to_numeric(df["ANO_MES"], errors="coerce").fillna(0).astype(int)
-    df["ANO"] = (ref_num // 100).astype(int)
-    df["MES"] = (ref_num % 100).astype(int)
+    ref_str = df["ANO_MES"].astype(str).str.strip()
+    if ref_str.str.contains("/").any():
+        partes = ref_str.str.split("/", expand=True)
+        df["ANO"] = pd.to_numeric(partes[0], errors="coerce").fillna(0).astype(int)
+        df["MES"] = pd.to_numeric(partes[1], errors="coerce").fillna(0).astype(int)
+    else:
+        ref_num = pd.to_numeric(ref_str, errors="coerce").fillna(0).astype(int)
+        df["ANO"] = (ref_num // 100).astype(int)
+        df["MES"] = (ref_num % 100).astype(int)
+
+    df = df[df["ANO"] > 0].copy()
     df["PERIODO"] = df["ANO"].astype(str) + "/" + df["MES"].astype(str).str.zfill(2)
 
     df["SIGLA"] = df["SIGLA"].astype(str).str.strip()
@@ -733,18 +760,14 @@ def load_data_contratos_geral(source):
 
     return df
 
-def page_contratos_temporarios():
+def page_indice_35_contratos():
     st.markdown("""
-    <h1 style="margin-top: 0.2rem; margin-bottom: 0.2rem;">CONTRATOS TEMPORÁRIOS — QUADRO GERAL</h1>
-    <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Controle de Índice Legal (35%) — Art. 2º, § 3º do Decreto 48.097/2020 (Lei 23.750/2020)</p>
+    <h1 style="margin-top: 0.2rem; margin-bottom: 0.2rem;">ÍNDICE 35% - CONTRATOS</h1>
+    <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Controle de Índice Legal — Art. 2º, § 3º do Decreto 48.097/2020 (Lei 23.750/2020)</p>
     """, unsafe_allow_html=True)
     st.markdown("---")
 
-    arquivo_encontrado = None
-    for nome_arquivo in ["Historico.xlsx", "HISTORICO.xlsx", "Histórico.xlsx", "HISTÓRICO.xlsx"]:
-        if os.path.exists(nome_arquivo):
-            arquivo_encontrado = nome_arquivo
-            break
+    arquivo_encontrado = encontrar_arquivo(["Historico.xlsx", "Histórico.xlsx", "Historico_Contratos.xlsx"])
 
     if arquivo_encontrado:
         df_ct = load_data_contratos_geral(arquivo_encontrado)
@@ -757,11 +780,11 @@ def page_contratos_temporarios():
         if uploaded_ct:
             df_ct = load_data_contratos_geral(uploaded_ct)
         else:
-            st.info("Aguardando o arquivo `Historico.xlsx` para iniciar o painel de Contratos Temporários.")
+            st.info("Aguardando o arquivo `Historico.xlsx` para iniciar o painel Índice 35% - Contratos.")
             st.stop()
 
     # ── Filtros na Sidebar ──
-    st.sidebar.markdown("### 🔍 Filtros — Contratos Temp.", unsafe_allow_html=True)
+    st.sidebar.markdown("### 🔍 Filtros — Índice 35%", unsafe_allow_html=True)
 
     anos_disp = sorted(df_ct["ANO"].unique())
     ano_sel = st.sidebar.selectbox(
@@ -869,8 +892,8 @@ def page_contratos_temporarios():
 
         st.download_button(
             label="⬇️ Exportar Tabela por Órgão",
-            data=to_excel_bytes(tab_org_fmt, sheet_name="Contratos_Por_Orgao"),
-            file_name=f"contratos_temporarios_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
+            data=to_excel_bytes(tab_org_fmt, sheet_name="Indice_35_Por_Orgao"),
+            file_name=f"indice_35_contratos_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
             key="dl_ct_orgaos"
@@ -947,7 +970,6 @@ def page_contratos_temporarios():
                 + df_barras["QTDE_CT"].apply(fmt_int_br)
             )
 
-            # Inverte a ordem para que o maior fique no topo e TOTAL na base
             df_barras_plot = df_barras.iloc[::-1].reset_index(drop=True)
             cores = ["#A0522D" if s == "TOTAL" else "#D2691E" for s in df_barras_plot["SIGLA"]]
 
@@ -974,24 +996,22 @@ def page_contratos_temporarios():
 def main():
     setup_page()
 
+    PAGINAS = {
+        "📊 Lotação de Pessoal": page_lotacao,
+        "🎓 Contratos Temporários - Magistério": page_magisterio,
+        "📉 Índice 35% - Contratos": page_indice_35_contratos,
+    }
+
     st.sidebar.markdown("### 🧭 Navegação", unsafe_allow_html=True)
     pagina_selecionada = st.sidebar.radio(
         "Selecione o painel:",
-        options=[
-            "📊 Lotação de Pessoal",
-            "🎓 Contratos Temporários - Magistério",
-            "📋 Contratos Temporários - Geral",
-        ],
+        options=list(PAGINAS.keys()),
         label_visibility="collapsed",
     )
     st.sidebar.divider()
 
-    if pagina_selecionada == "📊 Lotação de Pessoal":
-        page_lotacao()
-    elif pagina_selecionada == "🎓 Contratos Temporários - Magistério":
-        page_magisterio()
-    elif pagina_selecionada == "📋 Índice de 35% Contratos":
-        page_contratos_temporarios()
+    # Executa a função correspondente à página escolhida
+    PAGINAS[pagina_selecionada]()
 
     st.sidebar.divider()
     st.sidebar.caption("Dashboard RH – DCGFT MG\nFeito com Streamlit 🚀")
