@@ -990,7 +990,7 @@ def main():
         page_lotacao()
     elif pagina_selecionada == "🎓 Contratos Temporários - Magistério":
         page_magisterio()
-    elif pagina_selecionada == "📋 Contratos Temporários - Geral":
+    elif pagina_selecionada == "📋 Índice de 35% Contratos":
         page_contratos_temporarios()
 
     st.sidebar.divider()
