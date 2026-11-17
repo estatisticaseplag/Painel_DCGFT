@@ -54,37 +54,39 @@ def setup_page():
         
         .main { background-color: #f5f5f5; }
         
-        /* ── CARDS DE KPI RESPONSIVOS ── */
+        /* ── CARDS DE KPI EMPILHADOS (UM ABAIXO DO OUTRO) ── */
         [data-testid="stMetric"] { 
-            background: white; 
+            background: #ffffff; 
             border-radius: 8px; 
-            padding: 10px 12px !important; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            border: 1px solid #e8e8e8;
-            border-left: 4px solid #D2691E;
-            min-width: 0 !important;
+            padding: 14px 18px !important; 
+            margin-bottom: 10px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+            border-left: 5px solid #D2691E;
+            width: 100% !important;
         }
 
         [data-testid="stMetricLabel"],
         [data-testid="stMetricLabel"] *,
         div[data-testid="stMetricLabel"] p { 
-            font-size: 0.70rem !important; 
-            color: #666 !important;
+            font-size: 0.82rem !important; 
+            color: #555555 !important;
             font-weight: 600 !important;
             text-transform: uppercase !important;
+            letter-spacing: 0.03em !important;
             white-space: normal !important;
-            word-break: break-word !important;
             overflow: visible !important;
             text-overflow: unset !important;
-            line-height: 1.2 !important;
+            line-height: 1.3 !important;
+            margin-bottom: 4px !important;
         }
 
         [data-testid="stMetricValue"],
         [data-testid="stMetricValue"] * {
             color: #D2691E !important;
             font-weight: 700 !important;
-            font-size: clamp(0.88rem, 1.05vw, 1.35rem) !important;
-            white-space: nowrap !important;
+            font-size: 1.45rem !important;
+            white-space: normal !important;
         }
         
         h1 { 
@@ -110,62 +112,85 @@ def setup_page():
             border-right: 1px solid #e8e8e8;
             border-bottom: 1px solid #e8e8e8;
             border-radius: 6px;
-            padding: 12px 16px;
-            font-size: 0.88rem;
+            padding: 14px 18px;
+            font-size: 0.9rem;
             color: #333;
-            line-height: 1.45;
-            margin-bottom: 1rem;
+            line-height: 1.5;
+            margin-top: 0.6rem;
+            margin-bottom: 1.2rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
-        /* ── SIDEBAR LARANJA E MENU DE NAVEGAÇÃO ── */
+        /* ── SIDEBAR CLARA E LEGÍVEL ── */
         section[data-testid="stSidebar"],
         div[data-testid="stSidebar"] { 
-            background: linear-gradient(180deg, #D2691E 0%, #C85A17 100%) !important;
+            background-color: #f8f9fa !important;
+            border-right: 1px solid #e0e0e0 !important;
         }
-        section[data-testid="stSidebar"] *,
-        div[data-testid="stSidebar"] * { color: white !important; }
+        section[data-testid="stSidebar"] h1,
+        section[data-testid="stSidebar"] h2,
+        section[data-testid="stSidebar"] h3,
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] span,
+        section[data-testid="stSidebar"] label,
+        div[data-testid="stSidebar"] h1,
+        div[data-testid="stSidebar"] h2,
+        div[data-testid="stSidebar"] h3,
+        div[data-testid="stSidebar"] p,
+        div[data-testid="stSidebar"] span,
+        div[data-testid="stSidebar"] label { 
+            color: #2d2d2d !important;
+        }
 
         section[data-testid="stSidebar"] .stSelectbox label,
         section[data-testid="stSidebar"] .stMultiSelect label,
         div[data-testid="stSidebar"] .stSelectbox label,
         div[data-testid="stSidebar"] .stMultiSelect label { 
-            color: white !important;
-            font-weight: 500;
+            color: #333333 !important;
+            font-weight: 600 !important;
         }
-        section[data-testid="stSidebar"] [data-baseweb="select"],
-        div[data-testid="stSidebar"] [data-baseweb="select"] {
-            background-color: rgba(255,255,255,0.15) !important;
+
+        section[data-testid="stSidebar"] [data-baseweb="select"] > div,
+        div[data-testid="stSidebar"] [data-baseweb="select"] > div {
+            background-color: #ffffff !important;
+            border-color: #d1d5db !important;
+        }
+
+        section[data-testid="stSidebar"] [data-baseweb="select"] *,
+        div[data-testid="stSidebar"] [data-baseweb="select"] * {
+            color: #2d2d2d !important;
         }
 
         div[data-baseweb="select"] input::placeholder {
-            color: rgba(255, 255, 255, 0.7) !important;
+            color: #888888 !important;
         }
 
         /* Estilo dos botões do Menu de Navegação */
         section[data-testid="stSidebar"] [data-testid="stRadio"] > div,
         div[data-testid="stSidebar"] [data-testid="stRadio"] > div {
-            gap: 0.4rem;
+            gap: 0.45rem;
         }
         section[data-testid="stSidebar"] [data-testid="stRadio"] label,
         div[data-testid="stSidebar"] [data-testid="stRadio"] label {
-            background-color: rgba(255, 255, 255, 0.14);
-            padding: 0.55rem 0.8rem;
+            background-color: #ffffff;
+            padding: 0.6rem 0.85rem;
             border-radius: 6px;
             width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: background-color 0.2s ease;
+            border: 1px solid #dcdcdc;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
             cursor: pointer;
         }
         section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover,
         div[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-            background-color: rgba(255, 255, 255, 0.26);
+            border-color: #D2691E;
+            background-color: #fff8f3;
         }
         
         /* Download button */
         .stDownloadButton button {
             background-color: #D2691E;
-            color: white;
+            color: white !important;
             border: none;
             font-weight: 600;
             border-radius: 6px;
@@ -334,12 +359,12 @@ def page_lotacao():
     n_orgaos = dff[col_inst].nunique()
     n_carreiras = dff["DS_NOME_CARREIRA"].nunique()
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("👤 Servidores", f"{total_servidores:,.0f}")
-    c2.metric("🏛️ Órgãos", f"{n_orgaos}")
-    c3.metric("📋 Carreiras", f"{n_carreiras}")
-    c4.metric("⏱️ CH Total (h)", f"{total_ch:,.0f}")
-    c5.metric("⏱️ CH Média (h)", f"{media_ch:,.1f}")
+    # Cards empilhados um abaixo do outro
+    st.metric("👤 Servidores", fmt_int_br(total_servidores))
+    st.metric("🏛️ Órgãos", f"{n_orgaos}")
+    st.metric("📋 Carreiras", f"{n_carreiras}")
+    st.metric("⏱️ CH Total (h)", fmt_int_br(total_ch))
+    st.metric("⏱️ CH Média (h)", f"{media_ch:,.1f}".replace(".", ","))
 
     st.divider()
 
@@ -551,13 +576,13 @@ def page_magisterio():
     limite_qtd = total_lei * taxa_limite
     margem = limite_qtd - total_ct
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("📅 Mês de Referência", mes_ref_texto)
-    c2.metric("🏛️ Quant. em Lei (EF)", fmt_int_br(total_lei))
-    c3.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
-    c4.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
-    c5.metric(f"⚖️ Limite de {int(taxa_limite*100)}%", fmt_int_br(limite_qtd))
-    c6.metric("📉 Margem", fmt_int_br(margem))
+    # Cards empilhados um abaixo do outro
+    st.metric("📅 Mês de Referência", mes_ref_texto)
+    st.metric("🏛️ Quant. em Lei (EF)", fmt_int_br(total_lei))
+    st.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
+    st.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
+    st.metric(f"⚖️ Limite de {int(taxa_limite*100)}%", fmt_int_br(limite_qtd))
+    st.metric("📉 Margem", fmt_int_br(margem))
 
     st.markdown("""
     <div class="objetivo-box">
@@ -825,7 +850,7 @@ def page_indice_35_contratos():
         st.warning("Nenhum dado encontrado para os filtros aplicados.")
         st.stop()
 
-    # ── 6 Cards de KPIs ──
+    # ── 6 Cards de KPIs empilhados um abaixo do outro ──
     mes_ref_texto = f"{MESES_PT.get(mes_sel, '').upper()} DE {ano_sel}"
     total_ef = df_atual["Efetivo"].sum()
     total_ct = df_atual["Contrato/Designado"].sum()
@@ -833,13 +858,12 @@ def page_indice_35_contratos():
     limite_35 = total_ef * 0.35
     margem = limite_35 - total_ct
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("📅 Mês de Referência", mes_ref_texto)
-    c2.metric("🏛️ Efetivos (EF)", fmt_int_br(total_ef))
-    c3.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
-    c4.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
-    c5.metric("⚖️ Limite de 35% (L)", fmt_int_br(limite_35))
-    c6.metric("📉 Margem (M)", fmt_int_br(margem))
+    st.metric("📅 Mês de Referência", mes_ref_texto)
+    st.metric("🏛️ Efetivos (EF)", fmt_int_br(total_ef))
+    st.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
+    st.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
+    st.metric("⚖️ Limite de 35% (L)", fmt_int_br(limite_35))
+    st.metric("📉 Margem (M)", fmt_int_br(margem))
 
     # ── Caixa de Objetivo e Metodologia ──
     st.markdown("""
@@ -919,26 +943,23 @@ def page_indice_35_contratos():
         fig_hist_ct.add_trace(go.Scatter(
             x=hist_ct["PERIODO"],
             y=hist_ct["QTDE_CT"],
-            mode="lines+markers+text",
+            mode="lines+markers",
             name="Qtde de Contratos",
-            text=hist_ct["QTDE_CT"].apply(fmt_int_br),
-            textposition="top center",
             line=dict(color="#D2691E", width=2.5),
-            marker=dict(size=6)
+            marker=dict(size=5)
         ))
         fig_hist_ct.add_trace(go.Scatter(
             x=hist_ct["PERIODO"],
             y=hist_ct["LIMITE_MAX"],
-            mode="lines+markers+text",
+            mode="lines+markers",
             name="Limite Máximo (35%)",
-            text=hist_ct["LIMITE_MAX"].apply(fmt_int_br),
-            textposition="top center",
             line=dict(color="#808080", width=2, dash="dash"),
-            marker=dict(size=5)
+            marker=dict(size=4)
         ))
         fig_hist_ct.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
+            hovermode="x unified",
             xaxis_tickangle=-45,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             margin=dict(l=0, r=10, t=30, b=0),
@@ -1010,7 +1031,6 @@ def main():
     )
     st.sidebar.divider()
 
-    # Executa a função correspondente à página escolhida
     PAGINAS[pagina_selecionada]()
 
     st.sidebar.divider()
