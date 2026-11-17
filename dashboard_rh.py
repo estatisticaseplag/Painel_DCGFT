@@ -90,7 +90,7 @@ def setup_page():
         
         .block-container { padding-top: 1rem; }
 
-        /* Caixa de Objetivo Legal (Magistério) */
+        /* Caixa de Objetivo e Metodologia */
         .objetivo-box {
             background-color: #ffffff;
             border-left: 4px solid #D2691E;
@@ -222,7 +222,7 @@ def load_data_lotacao(path="BASE_LOTACAO.xlsx"):
     return df
 
 def render_sidebar_filters_lotacao(df):
-    st.sidebar.markdown("### 🔍 Filtros", unsafe_allow_html=True)
+    st.sidebar.markdown("### 🔍 Filtros — Lotação", unsafe_allow_html=True)
 
     filtros = {}
     
@@ -421,7 +421,6 @@ def load_data_magisterio(source):
     df = pd.read_excel(xl, sheet_name=sheet)
     df.columns = [str(c).strip() for c in df.columns]
 
-    # Tratamento da coluna de período DT_ANO_MES_REF (ex.: "2025/01" ou 202501)
     ref_str = df["DT_ANO_MES_REF"].astype(str).str.strip()
     if ref_str.str.contains("/").any():
         partes = ref_str.str.split("/", expand=True)
@@ -434,7 +433,6 @@ def load_data_magisterio(source):
     df["PERIODO"] = df["ANO"].astype(str) + "/" + df["MES"].astype(str).str.zfill(2)
     df["MES_NOME"] = df["MES"].map(MESES_PT)
 
-    # Limpeza das colunas numéricas
     df["COUNT_of_NR_MASP_ADM"] = pd.to_numeric(df["COUNT_of_NR_MASP_ADM"], errors="coerce").fillna(0)
     df["QUANT_LEI"] = pd.to_numeric(df["QUANT_LEI"], errors="coerce").fillna(0)
     df["INSTITUICAO"] = df["INSTITUICAO"].astype(str).str.strip()
@@ -449,7 +447,6 @@ def page_magisterio():
     """, unsafe_allow_html=True)
     st.markdown("---")
 
-    # Busca automática pelo arquivo na pasta
     arquivo_encontrado = None
     for nome_arquivo in ["BASE_PAINEL.xlsx", "BASE PAINEL.xlsx"]:
         if os.path.exists(nome_arquivo):
@@ -470,22 +467,23 @@ def page_magisterio():
             st.info("Aguardando o arquivo `BASE_PAINEL.xlsx` para iniciar o painel do Magistério.")
             st.stop()
 
-    # ── Filtros na Sidebar (idênticos ao painel de referência) ──
     st.sidebar.markdown("### 🔍 Filtros — Magistério", unsafe_allow_html=True)
 
     anos_disp = sorted(df_mag["ANO"].unique())
     ano_sel = st.sidebar.selectbox(
         "Ano de Referência (Quadro Atual)",
         options=anos_disp,
-        index=len(anos_disp) - 1  # Padrão: ano mais recente
+        index=len(anos_disp) - 1,
+        key="ano_mag"
     )
 
     meses_do_ano = sorted(df_mag[df_mag["ANO"] == ano_sel]["MES"].unique())
     mes_sel = st.sidebar.selectbox(
         "Mês de Referência (Quadro Atual)",
         options=meses_do_ano,
-        index=len(meses_do_ano) - 1,  # Padrão: mês mais recente do ano
-        format_func=lambda m: f"{str(m).zfill(2)} - {MESES_PT.get(m, str(m))}"
+        index=len(meses_do_ano) - 1,
+        format_func=lambda m: f"{str(m).zfill(2)} - {MESES_PT.get(m, str(m))}",
+        key="mes_mag"
     )
 
     carreiras_disp = sorted(df_mag["DS_SIGLA_CARREIRA"].dropna().unique())
@@ -493,7 +491,8 @@ def page_magisterio():
         "Sigla da Carreira",
         options=carreiras_disp,
         default=[],
-        placeholder="Selecione a carreira..."
+        placeholder="Selecione a carreira...",
+        key="carr_mag"
     )
 
     orgaos_disp = sorted(df_mag["INSTITUICAO"].dropna().unique())
@@ -501,10 +500,10 @@ def page_magisterio():
         "Órgão / Instituição",
         options=orgaos_disp,
         default=[],
-        placeholder="Selecione o órgão..."
+        placeholder="Selecione o órgão...",
+        key="org_mag"
     )
 
-    # Filtro para Série Histórica (todas as datas, filtrado por órgão e carreira)
     mask_hist = pd.Series([True] * len(df_mag), index=df_mag.index)
     if carreiras_sel:
         mask_hist &= df_mag["DS_SIGLA_CARREIRA"].isin(carreiras_sel)
@@ -512,20 +511,17 @@ def page_magisterio():
         mask_hist &= df_mag["INSTITUICAO"].isin(orgaos_sel)
     df_hist = df_mag[mask_hist].copy()
 
-    # Filtro para o Quadro Atual (período específico selecionado)
     df_atual = df_hist[(df_hist["ANO"] == ano_sel) & (df_hist["MES"] == mes_sel)].copy()
 
     if df_atual.empty:
         st.warning("Nenhum dado encontrado para os filtros aplicados.")
         st.stop()
 
-    # ── Cálculo dos 6 KPIs Principais ──
     mes_ref_texto = f"{MESES_PT.get(mes_sel, '').upper()} DE {ano_sel}"
     total_lei = df_atual["QUANT_LEI"].sum()
     total_ct = df_atual["COUNT_of_NR_MASP_ADM"].sum()
     perc_ct = (total_ct / total_lei * 100) if total_lei > 0 else 0.0
 
-    # Regra legal escalonada: 50% (até 2025), 40% (2026), 30% (2027 em diante)
     if ano_sel <= 2025:
         taxa_limite = 0.50
     elif ano_sel == 2026:
@@ -534,7 +530,7 @@ def page_magisterio():
         taxa_limite = 0.30
 
     limite_qtd = total_lei * taxa_limite
-    margem = limite_qtd - total_ct  # Positivo = folga; Negativo = acima do limite
+    margem = limite_qtd - total_ct
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.metric("📅 Mês de Referência", mes_ref_texto)
@@ -544,7 +540,6 @@ def page_magisterio():
     c5.metric(f"⚖️ Limite de {int(taxa_limite*100)}%", fmt_int_br(limite_qtd))
     c6.metric("📉 Margem", fmt_int_br(margem))
 
-    # ── Texto Legal Explicativo ──
     st.markdown("""
     <div class="objetivo-box">
         <strong>Objetivo:</strong> Averiguar o cumprimento dos índices máximos de <strong>50% em 2025</strong>, 
@@ -557,9 +552,6 @@ def page_magisterio():
     </div>
     """, unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # BLOCO 1: QUADRO ATUAL (QUANTIDADE DE SERVIDORES POR ÓRGÃO NO MÊS)
-    # ══════════════════════════════════════════════════════════════════════════
     st.subheader(f"📋 Quadro Atual — Quantidade de servidores por órgão no mês ({mes_ref_texto})")
 
     quadro = (
@@ -579,7 +571,6 @@ def page_magisterio():
     quadro["LIM_27"] = 30.0
     quadro["DIF_27"] = quadro["PERCENTUAL"] - 30.0
 
-    # Linha de Total Geral no final do Quadro Atual
     perc_total = (total_ct / total_lei * 100) if total_lei > 0 else np.nan
     linha_total = pd.DataFrame([{
         "INSTITUICAO": "TOTAL GERAL",
@@ -597,7 +588,6 @@ def page_magisterio():
 
     quadro_exibicao = pd.concat([quadro, linha_total], ignore_index=True)
 
-    # Tabela formatada para exibição e exportação
     quadro_fmt = pd.DataFrame({
         "Órgão": quadro_exibicao["INSTITUICAO"],
         "Carreira": quadro_exibicao["DS_SIGLA_CARREIRA"],
@@ -627,7 +617,6 @@ def page_magisterio():
 
     st.dataframe(quadro_fmt, use_container_width=True, hide_index=True, height=430)
 
-    # Gráfico visual do Quadro Atual por Órgão/Carreira
     quadro_plot = quadro[quadro["QTDE_LEI"] > 0].copy()
     if not quadro_plot.empty:
         quadro_plot["ORGAO_CARREIRA"] = quadro_plot["INSTITUICAO"] + " - " + quadro_plot["DS_SIGLA_CARREIRA"]
@@ -656,12 +645,8 @@ def page_magisterio():
 
     st.divider()
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # BLOCO 2: SÉRIE HISTÓRICA (EVOLUÇÃO E TABELA PIVOTADA POR MÊS)
-    # ══════════════════════════════════════════════════════════════════════════
     st.subheader("📈 Série Histórica — Histórico da Quantidade de servidores por órgão")
 
-    # Gráfico de evolução temporal
     hist_evol = (
         df_hist.groupby("PERIODO", as_index=False)
         .agg(QTDE_LEI=("QUANT_LEI", "sum"), QTDE_CT=("COUNT_of_NR_MASP_ADM", "sum"))
@@ -689,7 +674,6 @@ def page_magisterio():
     )
     st.plotly_chart(fig_hist, use_container_width=True)
 
-    # Tabela Histórica Pivotada (Órgão x Carreira nas linhas, Períodos nas colunas)
     hist_agg = (
         df_hist.groupby(["INSTITUICAO", "DS_SIGLA_CARREIRA", "PERIODO"], as_index=False)
         .agg(QTDE_LEI=("QUANT_LEI", "sum"), QTDE_CT=("COUNT_of_NR_MASP_ADM", "sum"))
@@ -728,6 +712,264 @@ def page_magisterio():
 
     st.dataframe(tabela_hist_final, use_container_width=True, hide_index=True, height=400)
 
+# ══════════════════════════════════════════════════════════════════════════════
+# PÁGINA 3: CONTRATOS TEMPORÁRIOS - GERAL (HISTORICO.XLSX)
+# ══════════════════════════════════════════════════════════════════════════════
+@st.cache_data(show_spinner="Carregando base histórica de Contratos Temporários…")
+def load_data_contratos_geral(source):
+    xl = pd.ExcelFile(source)
+    sheet = "QUERY_FOR_TRNSTRANSPOSED" if "QUERY_FOR_TRNSTRANSPOSED" in xl.sheet_names else 0
+    df = pd.read_excel(xl, sheet_name=sheet)
+    df.columns = [str(c).strip() for c in df.columns]
+
+    ref_num = pd.to_numeric(df["ANO_MES"], errors="coerce").fillna(0).astype(int)
+    df["ANO"] = (ref_num // 100).astype(int)
+    df["MES"] = (ref_num % 100).astype(int)
+    df["PERIODO"] = df["ANO"].astype(str) + "/" + df["MES"].astype(str).str.zfill(2)
+
+    df["SIGLA"] = df["SIGLA"].astype(str).str.strip()
+    df["Efetivo"] = pd.to_numeric(df["Efetivo"], errors="coerce").fillna(0)
+    df["Contrato/Designado"] = pd.to_numeric(df["Contrato/Designado"], errors="coerce").fillna(0)
+
+    return df
+
+def page_contratos_temporarios():
+    st.markdown("""
+    <h1 style="margin-top: 0.2rem; margin-bottom: 0.2rem;">CONTRATOS TEMPORÁRIOS — QUADRO GERAL</h1>
+    <p style="color: #666; font-size: 1.1rem; margin-top: 0;">Controle de Índice Legal (35%) — Art. 2º, § 3º do Decreto 48.097/2020 (Lei 23.750/2020)</p>
+    """, unsafe_allow_html=True)
+    st.markdown("---")
+
+    arquivo_encontrado = None
+    for nome_arquivo in ["Historico.xlsx", "HISTORICO.xlsx", "Histórico.xlsx", "HISTÓRICO.xlsx"]:
+        if os.path.exists(nome_arquivo):
+            arquivo_encontrado = nome_arquivo
+            break
+
+    if arquivo_encontrado:
+        df_ct = load_data_contratos_geral(arquivo_encontrado)
+    else:
+        uploaded_ct = st.file_uploader(
+            "📂 Selecione a planilha Historico.xlsx (aba QUERY_FOR_TRNSTRANSPOSED)",
+            type=["xlsx"],
+            key="up_ct_geral"
+        )
+        if uploaded_ct:
+            df_ct = load_data_contratos_geral(uploaded_ct)
+        else:
+            st.info("Aguardando o arquivo `Historico.xlsx` para iniciar o painel de Contratos Temporários.")
+            st.stop()
+
+    # ── Filtros na Sidebar ──
+    st.sidebar.markdown("### 🔍 Filtros — Contratos Temp.", unsafe_allow_html=True)
+
+    anos_disp = sorted(df_ct["ANO"].unique())
+    ano_sel = st.sidebar.selectbox(
+        "Ano de Referência",
+        options=anos_disp,
+        index=len(anos_disp) - 1,
+        key="ano_ct_geral"
+    )
+
+    meses_do_ano = sorted(df_ct[df_ct["ANO"] == ano_sel]["MES"].unique())
+    mes_sel = st.sidebar.selectbox(
+        "Mês de Referência",
+        options=meses_do_ano,
+        index=len(meses_do_ano) - 1,
+        format_func=lambda m: f"{str(m).zfill(2)} - {MESES_PT.get(m, str(m))}",
+        key="mes_ct_geral"
+    )
+
+    orgaos_disp = sorted(df_ct["SIGLA"].dropna().unique())
+    orgaos_sel = st.sidebar.multiselect(
+        "Órgão (SIGLA)",
+        options=orgaos_disp,
+        default=[],
+        placeholder="Selecione o órgão...",
+        key="org_ct_geral"
+    )
+
+    # Histórico respeita o filtro de órgão
+    if orgaos_sel:
+        df_hist = df_ct[df_ct["SIGLA"].isin(orgaos_sel)].copy()
+    else:
+        df_hist = df_ct.copy()
+
+    # Recorte do mês/ano selecionado
+    df_atual = df_hist[(df_hist["ANO"] == ano_sel) & (df_hist["MES"] == mes_sel)].copy()
+
+    if df_atual.empty:
+        st.warning("Nenhum dado encontrado para os filtros aplicados.")
+        st.stop()
+
+    # ── 6 Cards de KPIs ──
+    mes_ref_texto = f"{MESES_PT.get(mes_sel, '').upper()} DE {ano_sel}"
+    total_ef = df_atual["Efetivo"].sum()
+    total_ct = df_atual["Contrato/Designado"].sum()
+    perc_ct = (total_ct / total_ef * 100) if total_ef > 0 else 0.0
+    limite_35 = total_ef * 0.35
+    margem = limite_35 - total_ct
+
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("📅 Mês de Referência", mes_ref_texto)
+    c2.metric("🏛️ Efetivos (EF)", fmt_int_br(total_ef))
+    c3.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
+    c4.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
+    c5.metric("⚖️ Limite de 35% (L)", fmt_int_br(limite_35))
+    c6.metric("📉 Margem (M)", fmt_int_br(margem))
+
+    # ── Caixa de Objetivo e Metodologia ──
+    st.markdown("""
+    <div class="objetivo-box">
+        <strong>Objetivo:</strong> Averiguar o cumprimento do índice máximo de <strong>35%</strong> de servidores 
+        contratados em relação ao total de servidores efetivos em exercício no quadro civil do Poder Executivo de MG 
+        conforme previsto no <strong>Art. 2º, § 3º do Decreto 48.097/2020</strong> (que regulamenta a <strong>Lei 23.750/2020</strong>).<br>
+        <strong>Metodologia:</strong> Foi considerado como contratos os servidores na situação funcional "Contrato Temporário" 
+        com natureza de ingresso relacionada a insuficiência de servidores efetivos nos quadros da administração pública: 
+        os servidores na situação funcional "Convocado" não pertencentes às carreiras de PEB, EEB, ANE-IE e PES foram considerados como convocados.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Layout Principal: Tabela à esquerda + 2 Gráficos à direita ──
+    col_esq, col_dir = st.columns([2, 3])
+
+    with col_esq:
+        st.subheader("📋 Quantidade de servidores por órgão")
+
+        tab_org = (
+            df_atual.groupby("SIGLA", as_index=False)
+            .agg(
+                QTDE_EF=("Efetivo", "sum"),
+                QTDE_CT=("Contrato/Designado", "sum")
+            )
+            .sort_values("SIGLA")
+        )
+        tab_org["PERCENTUAL"] = np.where(
+            tab_org["QTDE_EF"] > 0,
+            (tab_org["QTDE_CT"] / tab_org["QTDE_EF"]) * 100,
+            np.nan
+        )
+
+        linha_tot = pd.DataFrame([{
+            "SIGLA": "TOTAL GERAL",
+            "QTDE_EF": total_ef,
+            "QTDE_CT": total_ct,
+            "PERCENTUAL": (total_ct / total_ef * 100) if total_ef > 0 else np.nan
+        }])
+        tab_org_full = pd.concat([tab_org, linha_tot], ignore_index=True)
+
+        tab_org_fmt = pd.DataFrame({
+            "SIGLA": tab_org_full["SIGLA"],
+            "Qtde Efetivos": tab_org_full["QTDE_EF"].apply(fmt_int_br),
+            "Qtde Contratos Temp.": tab_org_full["QTDE_CT"].apply(fmt_int_br),
+            "Percentual": tab_org_full["PERCENTUAL"].apply(
+                lambda x: "0%" if pd.notna(x) and x == 0 else fmt_pct_br(x, 2)
+            )
+        })
+
+        st.download_button(
+            label="⬇️ Exportar Tabela por Órgão",
+            data=to_excel_bytes(tab_org_fmt, sheet_name="Contratos_Por_Orgao"),
+            file_name=f"contratos_temporarios_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            key="dl_ct_orgaos"
+        )
+
+        st.dataframe(tab_org_fmt, use_container_width=True, hide_index=True, height=620)
+
+    with col_dir:
+        # Gráfico 1: Série Histórica dos Contratos Temporários vs Limite Máximo (35%)
+        st.subheader("📈 Série Histórica dos Contratos Temporários")
+
+        hist_ct = (
+            df_hist.groupby("PERIODO", as_index=False)
+            .agg(
+                QTDE_EF=("Efetivo", "sum"),
+                QTDE_CT=("Contrato/Designado", "sum")
+            )
+            .sort_values("PERIODO")
+        )
+        hist_ct["LIMITE_MAX"] = hist_ct["QTDE_EF"] * 0.35
+
+        fig_hist_ct = go.Figure()
+        fig_hist_ct.add_trace(go.Scatter(
+            x=hist_ct["PERIODO"],
+            y=hist_ct["QTDE_CT"],
+            mode="lines+markers+text",
+            name="Qtde de Contratos",
+            text=hist_ct["QTDE_CT"].apply(fmt_int_br),
+            textposition="top center",
+            line=dict(color="#D2691E", width=2.5),
+            marker=dict(size=6)
+        ))
+        fig_hist_ct.add_trace(go.Scatter(
+            x=hist_ct["PERIODO"],
+            y=hist_ct["LIMITE_MAX"],
+            mode="lines+markers+text",
+            name="Limite Máximo (35%)",
+            text=hist_ct["LIMITE_MAX"].apply(fmt_int_br),
+            textposition="top center",
+            line=dict(color="#808080", width=2, dash="dash"),
+            marker=dict(size=5)
+        ))
+        fig_hist_ct.update_layout(
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            xaxis_tickangle=-45,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=0, r=10, t=30, b=0),
+            height=290
+        )
+        st.plotly_chart(fig_hist_ct, use_container_width=True)
+
+        # Gráfico 2: Qtde de contratos temporários por Órgão (Top 10 + Outros + TOTAL)
+        st.subheader(f"🏛️ Qtde de contratos temporários por Órgão ({mes_ref_texto})")
+
+        ct_positivos = tab_org[tab_org["QTDE_CT"] > 0].sort_values("QTDE_CT", ascending=False).copy()
+
+        if not ct_positivos.empty and total_ct > 0:
+            if len(ct_positivos) > 10:
+                top10 = ct_positivos.head(10).copy()
+                outros_val = ct_positivos.iloc[10:]["QTDE_CT"].sum()
+                linha_outros = pd.DataFrame([{"SIGLA": "Outros", "QTDE_CT": outros_val}])
+                df_barras = pd.concat([top10[["SIGLA", "QTDE_CT"]], linha_outros], ignore_index=True)
+            else:
+                df_barras = ct_positivos[["SIGLA", "QTDE_CT"]].copy()
+
+            linha_total_bar = pd.DataFrame([{"SIGLA": "TOTAL", "QTDE_CT": total_ct}])
+            df_barras = pd.concat([df_barras, linha_total_bar], ignore_index=True)
+
+            df_barras["PARTICIPACAO"] = (df_barras["QTDE_CT"] / total_ct) * 100
+            df_barras["ROTULO"] = (
+                df_barras["PARTICIPACAO"].apply(lambda p: fmt_pct_br(p, 2))
+                + "  |  "
+                + df_barras["QTDE_CT"].apply(fmt_int_br)
+            )
+
+            # Inverte a ordem para que o maior fique no topo e TOTAL na base
+            df_barras_plot = df_barras.iloc[::-1].reset_index(drop=True)
+            cores = ["#A0522D" if s == "TOTAL" else "#D2691E" for s in df_barras_plot["SIGLA"]]
+
+            fig_bar_ct = go.Figure(go.Bar(
+                x=df_barras_plot["QTDE_CT"],
+                y=df_barras_plot["SIGLA"],
+                orientation="h",
+                text=df_barras_plot["ROTULO"],
+                textposition="outside",
+                marker_color=cores
+            ))
+            fig_bar_ct.update_layout(
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                xaxis=dict(range=[0, df_barras_plot["QTDE_CT"].max() * 1.32], showticklabels=False),
+                margin=dict(l=0, r=20, t=10, b=0),
+                height=340
+            )
+            st.plotly_chart(fig_bar_ct, use_container_width=True)
+        else:
+            st.info("Não há contratos temporários registrados para os filtros selecionados neste período.")
+
 # ── 7. EXECUÇÃO PRINCIPAL E MENU DE NAVEGAÇÃO ───────────────────────────────
 def main():
     setup_page()
@@ -738,6 +980,7 @@ def main():
         options=[
             "📊 Lotação de Pessoal",
             "🎓 Contratos Temporários - Magistério",
+            "📋 Contratos Temporários - Geral",
         ],
         label_visibility="collapsed",
     )
@@ -747,6 +990,8 @@ def main():
         page_lotacao()
     elif pagina_selecionada == "🎓 Contratos Temporários - Magistério":
         page_magisterio()
+    elif pagina_selecionada == "📋 Contratos Temporários - Geral":
+        page_contratos_temporarios()
 
     st.sidebar.divider()
     st.sidebar.caption("Dashboard RH – DCGFT MG\nFeito com Streamlit 🚀")
