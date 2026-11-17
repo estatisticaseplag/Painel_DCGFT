@@ -1,3 +1,4 @@
+
 import os
 import streamlit as st
 import pandas as pd
@@ -97,7 +98,7 @@ def setup_page():
         h3 {
             color: #444;
             font-weight: 600;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
         }
         
         .block-container { padding-top: 1rem; }
@@ -117,16 +118,6 @@ def setup_page():
             margin-top: 0.6rem;
             margin-bottom: 1.1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        /* Títulos de seção alinhados */
-        .sec-title {
-            font-size: 1.02rem;
-            font-weight: 700;
-            color: #2d2d2d;
-            margin: 0 0 0.45rem 0;
-            padding: 0;
-            line-height: 1.35;
         }
         
         /* ── SIDEBAR CLARA E LEGÍVEL ── */
@@ -202,7 +193,7 @@ def setup_page():
             border: none;
             font-weight: 600;
             border-radius: 6px;
-            padding: 0.4rem 1rem;
+            padding: 0.45rem 1.2rem;
         }
         .stDownloadButton button:hover {
             background-color: #B8551A;
@@ -858,7 +849,7 @@ def page_indice_35_contratos():
         st.warning("Nenhum dado encontrado para os filtros aplicados.")
         st.stop()
 
-    # ── 6 Cards de KPIs lado a lado (igual antes) ──
+    # ── 6 Cards de KPIs lado a lado ──
     mes_ref_texto = f"{MESES_PT.get(mes_sel, '').upper()} DE {ano_sel}"
     total_ef = df_atual["Efetivo"].sum()
     total_ct = df_atual["Contrato/Designado"].sum()
@@ -886,171 +877,173 @@ def page_indice_35_contratos():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Layout Principal: Tabela à esquerda + 2 Gráficos alinhados à direita ──
-    col_esq, col_dir = st.columns([2.1, 2.9], gap="medium")
-
-    with col_esq:
-        tab_org = (
-            df_atual.groupby("SIGLA", as_index=False)
-            .agg(
-                QTDE_EF=("Efetivo", "sum"),
-                QTDE_CT=("Contrato/Designado", "sum")
-            )
-            .sort_values("SIGLA")
+    # ══════════════════════════════════════════════════════════════════════════
+    # BLOCO 1: TABELA — SERVIDORES POR ÓRGÃO
+    # ══════════════════════════════════════════════════════════════════════════
+    tab_org = (
+        df_atual.groupby("SIGLA", as_index=False)
+        .agg(
+            QTDE_EF=("Efetivo", "sum"),
+            QTDE_CT=("Contrato/Designado", "sum")
         )
-        tab_org["PERCENTUAL"] = np.where(
-            tab_org["QTDE_EF"] > 0,
-            (tab_org["QTDE_CT"] / tab_org["QTDE_EF"]) * 100,
-            np.nan
+        .sort_values("SIGLA")
+    )
+    tab_org["PERCENTUAL"] = np.where(
+        tab_org["QTDE_EF"] > 0,
+        (tab_org["QTDE_CT"] / tab_org["QTDE_EF"]) * 100,
+        np.nan
+    )
+
+    linha_tot = pd.DataFrame([{
+        "SIGLA": "TOTAL GERAL",
+        "QTDE_EF": total_ef,
+        "QTDE_CT": total_ct,
+        "PERCENTUAL": (total_ct / total_ef * 100) if total_ef > 0 else np.nan
+    }])
+    tab_org_full = pd.concat([tab_org, linha_tot], ignore_index=True)
+
+    tab_org_fmt = pd.DataFrame({
+        "SIGLA": tab_org_full["SIGLA"],
+        "Qtde Efetivos": tab_org_full["QTDE_EF"].apply(fmt_int_br),
+        "Qtde Contratos Temp.": tab_org_full["QTDE_CT"].apply(fmt_int_br),
+        "Percentual": tab_org_full["PERCENTUAL"].apply(
+            lambda x: "0%" if pd.notna(x) and x == 0 else fmt_pct_br(x, 2)
+        )
+    })
+
+    col_t1, col_t2 = st.columns([4.5, 1])
+    with col_t1:
+        st.subheader(f"📋 Servidores por Órgão ({mes_ref_texto})")
+    with col_t2:
+        st.download_button(
+            label="⬇️ Exportar Excel",
+            data=to_excel_bytes(tab_org_fmt, sheet_name="Indice_35_Por_Orgao"),
+            file_name=f"indice_35_contratos_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            key="dl_ct_orgaos"
         )
 
-        linha_tot = pd.DataFrame([{
-            "SIGLA": "TOTAL GERAL",
-            "QTDE_EF": total_ef,
-            "QTDE_CT": total_ct,
-            "PERCENTUAL": (total_ct / total_ef * 100) if total_ef > 0 else np.nan
-        }])
-        tab_org_full = pd.concat([tab_org, linha_tot], ignore_index=True)
+    st.dataframe(tab_org_fmt, use_container_width=True, hide_index=True, height=450)
 
-        tab_org_fmt = pd.DataFrame({
-            "SIGLA": tab_org_full["SIGLA"],
-            "Qtde Efetivos": tab_org_full["QTDE_EF"].apply(fmt_int_br),
-            "Qtde Contratos Temp.": tab_org_full["QTDE_CT"].apply(fmt_int_br),
-            "Percentual": tab_org_full["PERCENTUAL"].apply(
-                lambda x: "0%" if pd.notna(x) and x == 0 else fmt_pct_br(x, 2)
-            )
-        })
+    st.divider()
 
-        hdr_l, hdr_r = st.columns([3.2, 1.3])
-        with hdr_l:
-            st.markdown('<p class="sec-title">📋 Servidores por Órgão</p>', unsafe_allow_html=True)
-        with hdr_r:
-            st.download_button(
-                label="⬇️ Excel",
-                data=to_excel_bytes(tab_org_fmt, sheet_name="Indice_35_Por_Orgao"),
-                file_name=f"indice_35_contratos_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                key="dl_ct_orgaos"
-            )
+    # ══════════════════════════════════════════════════════════════════════════
+    # BLOCO 2: GRÁFICO 1 — SÉRIE HISTÓRICA DOS CONTRATOS TEMPORÁRIOS
+    # ══════════════════════════════════════════════════════════════════════════
+    st.subheader("📈 Série Histórica dos Contratos Temporários")
 
-        st.dataframe(tab_org_fmt, use_container_width=True, hide_index=True, height=645)
-
-    with col_dir:
-        # Gráfico 1: Série Histórica dos Contratos Temporários vs Limite Máximo (35%)
-        st.markdown('<p class="sec-title">📈 Série Histórica dos Contratos Temporários</p>', unsafe_allow_html=True)
-
-        hist_ct = (
-            df_hist.groupby("PERIODO", as_index=False)
-            .agg(
-                QTDE_EF=("Efetivo", "sum"),
-                QTDE_CT=("Contrato/Designado", "sum")
-            )
-            .sort_values("PERIODO")
+    hist_ct = (
+        df_hist.groupby("PERIODO", as_index=False)
+        .agg(
+            QTDE_EF=("Efetivo", "sum"),
+            QTDE_CT=("Contrato/Designado", "sum")
         )
-        hist_ct["LIMITE_MAX"] = hist_ct["QTDE_EF"] * 0.35
+        .sort_values("PERIODO")
+    )
+    hist_ct["LIMITE_MAX"] = hist_ct["QTDE_EF"] * 0.35
 
-        # Exibe rótulos apenas em pontos espaçados (início, a cada 8 meses e último) para não poluir
-        n_pts = len(hist_ct)
-        indices_rotulo = {0, n_pts - 1}
-        if n_pts > 10:
-            indices_rotulo.update(range(0, n_pts, 8))
+    n_pts = len(hist_ct)
+    indices_rotulo = {0, n_pts - 1}
+    if n_pts > 10:
+        indices_rotulo.update(range(0, n_pts, 6))
 
-        text_ct = [
-            fmt_int_br(v) if i in indices_rotulo else ""
-            for i, v in enumerate(hist_ct["QTDE_CT"])
-        ]
-        text_lim = [
-            fmt_int_br(v) if i in indices_rotulo else ""
-            for i, v in enumerate(hist_ct["LIMITE_MAX"])
-        ]
+    text_ct = [
+        fmt_int_br(v) if i in indices_rotulo else ""
+        for i, v in enumerate(hist_ct["QTDE_CT"])
+    ]
+    text_lim = [
+        fmt_int_br(v) if i in indices_rotulo else ""
+        for i, v in enumerate(hist_ct["LIMITE_MAX"])
+    ]
 
-        fig_hist_ct = go.Figure()
-        fig_hist_ct.add_trace(go.Scatter(
-            x=hist_ct["PERIODO"],
-            y=hist_ct["QTDE_CT"],
-            mode="lines+markers+text",
-            name="Qtde de Contratos",
-            text=text_ct,
-            textposition="bottom center",
-            textfont=dict(size=9, color="#B8551A"),
-            line=dict(color="#D2691E", width=2.3),
-            marker=dict(size=5)
+    fig_hist_ct = go.Figure()
+    fig_hist_ct.add_trace(go.Scatter(
+        x=hist_ct["PERIODO"],
+        y=hist_ct["QTDE_CT"],
+        mode="lines+markers+text",
+        name="Qtde de Contratos",
+        text=text_ct,
+        textposition="bottom center",
+        textfont=dict(size=10, color="#B8551A"),
+        line=dict(color="#D2691E", width=2.5),
+        marker=dict(size=6)
+    ))
+    fig_hist_ct.add_trace(go.Scatter(
+        x=hist_ct["PERIODO"],
+        y=hist_ct["LIMITE_MAX"],
+        mode="lines+markers+text",
+        name="Limite Máximo (35%)",
+        text=text_lim,
+        textposition="top center",
+        textfont=dict(size=10, color="#555555"),
+        line=dict(color="#808080", width=2, dash="dash"),
+        marker=dict(size=5)
+    ))
+    y_max_hist = max(hist_ct["LIMITE_MAX"].max(), hist_ct["QTDE_CT"].max()) * 1.15
+    fig_hist_ct.update_layout(
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        hovermode="x unified",
+        xaxis=dict(tickangle=-45, nticks=20),
+        yaxis=dict(range=[0, y_max_hist], gridcolor="#eeeeee"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=0, r=10, t=30, b=0),
+        height=340
+    )
+    st.plotly_chart(fig_hist_ct, use_container_width=True)
+
+    st.divider()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BLOCO 3: GRÁFICO 2 — CONTRATOS TEMPORÁRIOS POR ÓRGÃO
+    # ══════════════════════════════════════════════════════════════════════════
+    st.subheader(f"🏛️ Contratos Temporários por Órgão ({mes_ref_texto})")
+
+    ct_positivos = tab_org[tab_org["QTDE_CT"] > 0].sort_values("QTDE_CT", ascending=False).copy()
+
+    if not ct_positivos.empty and total_ct > 0:
+        if len(ct_positivos) > 10:
+            top10 = ct_positivos.head(10).copy()
+            outros_val = ct_positivos.iloc[10:]["QTDE_CT"].sum()
+            linha_outros = pd.DataFrame([{"SIGLA": "Outros", "QTDE_CT": outros_val}])
+            df_barras = pd.concat([top10[["SIGLA", "QTDE_CT"]], linha_outros], ignore_index=True)
+        else:
+            df_barras = ct_positivos[["SIGLA", "QTDE_CT"]].copy()
+
+        linha_total_bar = pd.DataFrame([{"SIGLA": "TOTAL", "QTDE_CT": total_ct}])
+        df_barras = pd.concat([df_barras, linha_total_bar], ignore_index=True)
+
+        df_barras["PARTICIPACAO"] = (df_barras["QTDE_CT"] / total_ct) * 100
+        df_barras["ROTULO"] = (
+            df_barras["PARTICIPACAO"].apply(lambda p: fmt_pct_br(p, 2))
+            + "  |  "
+            + df_barras["QTDE_CT"].apply(fmt_int_br)
+        )
+
+        df_barras_plot = df_barras.iloc[::-1].reset_index(drop=True)
+        cores = ["#A0522D" if s == "TOTAL" else "#D2691E" for s in df_barras_plot["SIGLA"]]
+
+        fig_bar_ct = go.Figure(go.Bar(
+            x=df_barras_plot["QTDE_CT"],
+            y=df_barras_plot["SIGLA"],
+            orientation="h",
+            text=df_barras_plot["ROTULO"],
+            textposition="outside",
+            textfont=dict(size=11, color="#333333"),
+            marker_color=cores
         ))
-        fig_hist_ct.add_trace(go.Scatter(
-            x=hist_ct["PERIODO"],
-            y=hist_ct["LIMITE_MAX"],
-            mode="lines+markers+text",
-            name="Limite Máximo (35%)",
-            text=text_lim,
-            textposition="top center",
-            textfont=dict(size=9, color="#555555"),
-            line=dict(color="#808080", width=2, dash="dash"),
-            marker=dict(size=4)
-        ))
-        y_max_hist = max(hist_ct["LIMITE_MAX"].max(), hist_ct["QTDE_CT"].max()) * 1.15
-        fig_hist_ct.update_layout(
+        fig_bar_ct.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
-            hovermode="x unified",
-            xaxis=dict(tickangle=-45, nticks=15),
-            yaxis=dict(range=[0, y_max_hist], gridcolor="#eeeeee"),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            margin=dict(l=0, r=10, t=28, b=0),
-            height=265
+            xaxis=dict(range=[0, df_barras_plot["QTDE_CT"].max() * 1.25], showticklabels=False, showgrid=False),
+            yaxis=dict(tickfont=dict(size=11)),
+            margin=dict(l=0, r=20, t=10, b=0),
+            height=400
         )
-        st.plotly_chart(fig_hist_ct, use_container_width=True)
-
-        # Gráfico 2: Qtde de contratos temporários por Órgão (Top 10 + Outros + TOTAL)
-        st.markdown(
-            f'<p class="sec-title" style="margin-top: 0.35rem;">🏛️ Contratos Temporários por Órgão ({mes_ref_texto})</p>',
-            unsafe_allow_html=True
-        )
-
-        ct_positivos = tab_org[tab_org["QTDE_CT"] > 0].sort_values("QTDE_CT", ascending=False).copy()
-
-        if not ct_positivos.empty and total_ct > 0:
-            if len(ct_positivos) > 10:
-                top10 = ct_positivos.head(10).copy()
-                outros_val = ct_positivos.iloc[10:]["QTDE_CT"].sum()
-                linha_outros = pd.DataFrame([{"SIGLA": "Outros", "QTDE_CT": outros_val}])
-                df_barras = pd.concat([top10[["SIGLA", "QTDE_CT"]], linha_outros], ignore_index=True)
-            else:
-                df_barras = ct_positivos[["SIGLA", "QTDE_CT"]].copy()
-
-            linha_total_bar = pd.DataFrame([{"SIGLA": "TOTAL", "QTDE_CT": total_ct}])
-            df_barras = pd.concat([df_barras, linha_total_bar], ignore_index=True)
-
-            df_barras["PARTICIPACAO"] = (df_barras["QTDE_CT"] / total_ct) * 100
-            df_barras["ROTULO"] = (
-                df_barras["PARTICIPACAO"].apply(lambda p: fmt_pct_br(p, 2))
-                + "  |  "
-                + df_barras["QTDE_CT"].apply(fmt_int_br)
-            )
-
-            df_barras_plot = df_barras.iloc[::-1].reset_index(drop=True)
-            cores = ["#A0522D" if s == "TOTAL" else "#D2691E" for s in df_barras_plot["SIGLA"]]
-
-            fig_bar_ct = go.Figure(go.Bar(
-                x=df_barras_plot["QTDE_CT"],
-                y=df_barras_plot["SIGLA"],
-                orientation="h",
-                text=df_barras_plot["ROTULO"],
-                textposition="outside",
-                textfont=dict(size=10, color="#333333"),
-                marker_color=cores
-            ))
-            fig_bar_ct.update_layout(
-                plot_bgcolor="white",
-                paper_bgcolor="white",
-                xaxis=dict(range=[0, df_barras_plot["QTDE_CT"].max() * 1.38], showticklabels=False, showgrid=False),
-                yaxis=dict(tickfont=dict(size=10)),
-                margin=dict(l=0, r=15, t=6, b=0),
-                height=345
-            )
-            st.plotly_chart(fig_bar_ct, use_container_width=True)
-        else:
-            st.info("Não há contratos temporários registrados para os filtros selecionados neste período.")
+        st.plotly_chart(fig_bar_ct, use_container_width=True)
+    else:
+        st.info("Não há contratos temporários registrados para os filtros selecionados neste período.")
 
 # ── 7. EXECUÇÃO PRINCIPAL E MENU DE NAVEGAÇÃO ───────────────────────────────
 def main():
