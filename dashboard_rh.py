@@ -54,39 +54,37 @@ def setup_page():
         
         .main { background-color: #f5f5f5; }
         
-        /* ── CARDS DE KPI EMPILHADOS (UM ABAIXO DO OUTRO) ── */
+        /* ── CARDS DE KPI HORIZONTAIS E RESPONSIVOS ── */
         [data-testid="stMetric"] { 
             background: #ffffff; 
             border-radius: 8px; 
-            padding: 14px 18px !important; 
-            margin-bottom: 10px !important;
+            padding: 10px 12px !important; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.06);
             border: 1px solid #e5e7eb;
-            border-left: 5px solid #D2691E;
-            width: 100% !important;
+            border-left: 4px solid #D2691E;
+            min-width: 0 !important;
         }
 
         [data-testid="stMetricLabel"],
         [data-testid="stMetricLabel"] *,
         div[data-testid="stMetricLabel"] p { 
-            font-size: 0.82rem !important; 
-            color: #555555 !important;
+            font-size: 0.70rem !important; 
+            color: #666666 !important;
             font-weight: 600 !important;
             text-transform: uppercase !important;
-            letter-spacing: 0.03em !important;
             white-space: normal !important;
+            word-break: break-word !important;
             overflow: visible !important;
             text-overflow: unset !important;
-            line-height: 1.3 !important;
-            margin-bottom: 4px !important;
+            line-height: 1.2 !important;
         }
 
         [data-testid="stMetricValue"],
         [data-testid="stMetricValue"] * {
             color: #D2691E !important;
             font-weight: 700 !important;
-            font-size: 1.45rem !important;
-            white-space: normal !important;
+            font-size: clamp(0.88rem, 1.08vw, 1.35rem) !important;
+            white-space: nowrap !important;
         }
         
         h1 { 
@@ -97,9 +95,9 @@ def setup_page():
         }
         
         h3 {
-            color: #555;
+            color: #444;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
         
         .block-container { padding-top: 1rem; }
@@ -112,13 +110,23 @@ def setup_page():
             border-right: 1px solid #e8e8e8;
             border-bottom: 1px solid #e8e8e8;
             border-radius: 6px;
-            padding: 14px 18px;
-            font-size: 0.9rem;
+            padding: 12px 16px;
+            font-size: 0.88rem;
             color: #333;
-            line-height: 1.5;
+            line-height: 1.45;
             margin-top: 0.6rem;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Títulos de seção alinhados */
+        .sec-title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: #2d2d2d;
+            margin: 0 0 0.45rem 0;
+            padding: 0;
+            line-height: 1.35;
         }
         
         /* ── SIDEBAR CLARA E LEGÍVEL ── */
@@ -194,7 +202,7 @@ def setup_page():
             border: none;
             font-weight: 600;
             border-radius: 6px;
-            padding: 0.5rem 1.5rem;
+            padding: 0.4rem 1rem;
         }
         .stDownloadButton button:hover {
             background-color: #B8551A;
@@ -359,12 +367,12 @@ def page_lotacao():
     n_orgaos = dff[col_inst].nunique()
     n_carreiras = dff["DS_NOME_CARREIRA"].nunique()
 
-    # Cards empilhados um abaixo do outro
-    st.metric("👤 Servidores", fmt_int_br(total_servidores))
-    st.metric("🏛️ Órgãos", f"{n_orgaos}")
-    st.metric("📋 Carreiras", f"{n_carreiras}")
-    st.metric("⏱️ CH Total (h)", fmt_int_br(total_ch))
-    st.metric("⏱️ CH Média (h)", f"{media_ch:,.1f}".replace(".", ","))
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("👤 Servidores", fmt_int_br(total_servidores))
+    c2.metric("🏛️ Órgãos", f"{n_orgaos}")
+    c3.metric("📋 Carreiras", f"{n_carreiras}")
+    c4.metric("⏱️ CH Total (h)", fmt_int_br(total_ch))
+    c5.metric("⏱️ CH Média (h)", f"{media_ch:,.1f}".replace(".", ","))
 
     st.divider()
 
@@ -576,13 +584,13 @@ def page_magisterio():
     limite_qtd = total_lei * taxa_limite
     margem = limite_qtd - total_ct
 
-    # Cards empilhados um abaixo do outro
-    st.metric("📅 Mês de Referência", mes_ref_texto)
-    st.metric("🏛️ Quant. em Lei (EF)", fmt_int_br(total_lei))
-    st.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
-    st.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
-    st.metric(f"⚖️ Limite de {int(taxa_limite*100)}%", fmt_int_br(limite_qtd))
-    st.metric("📉 Margem", fmt_int_br(margem))
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("📅 Mês de Referência", mes_ref_texto)
+    c2.metric("🏛️ Quant. em Lei (EF)", fmt_int_br(total_lei))
+    c3.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
+    c4.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
+    c5.metric(f"⚖️ Limite de {int(taxa_limite*100)}%", fmt_int_br(limite_qtd))
+    c6.metric("📉 Margem", fmt_int_br(margem))
 
     st.markdown("""
     <div class="objetivo-box">
@@ -850,7 +858,7 @@ def page_indice_35_contratos():
         st.warning("Nenhum dado encontrado para os filtros aplicados.")
         st.stop()
 
-    # ── 6 Cards de KPIs empilhados um abaixo do outro ──
+    # ── 6 Cards de KPIs lado a lado (igual antes) ──
     mes_ref_texto = f"{MESES_PT.get(mes_sel, '').upper()} DE {ano_sel}"
     total_ef = df_atual["Efetivo"].sum()
     total_ct = df_atual["Contrato/Designado"].sum()
@@ -858,12 +866,13 @@ def page_indice_35_contratos():
     limite_35 = total_ef * 0.35
     margem = limite_35 - total_ct
 
-    st.metric("📅 Mês de Referência", mes_ref_texto)
-    st.metric("🏛️ Efetivos (EF)", fmt_int_br(total_ef))
-    st.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
-    st.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
-    st.metric("⚖️ Limite de 35% (L)", fmt_int_br(limite_35))
-    st.metric("📉 Margem (M)", fmt_int_br(margem))
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("📅 Mês de Referência", mes_ref_texto)
+    c2.metric("🏛️ Efetivos (EF)", fmt_int_br(total_ef))
+    c3.metric("📝 Contrato Temp. (CT)", fmt_int_br(total_ct))
+    c4.metric("📊 % Contratos Temp.", fmt_pct_br(perc_ct, 2))
+    c5.metric("⚖️ Limite de 35% (L)", fmt_int_br(limite_35))
+    c6.metric("📉 Margem (M)", fmt_int_br(margem))
 
     # ── Caixa de Objetivo e Metodologia ──
     st.markdown("""
@@ -877,12 +886,10 @@ def page_indice_35_contratos():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Layout Principal: Tabela à esquerda + 2 Gráficos à direita ──
-    col_esq, col_dir = st.columns([2, 3])
+    # ── Layout Principal: Tabela à esquerda + 2 Gráficos alinhados à direita ──
+    col_esq, col_dir = st.columns([2.1, 2.9], gap="medium")
 
     with col_esq:
-        st.subheader("📋 Quantidade de servidores por órgão")
-
         tab_org = (
             df_atual.groupby("SIGLA", as_index=False)
             .agg(
@@ -914,20 +921,24 @@ def page_indice_35_contratos():
             )
         })
 
-        st.download_button(
-            label="⬇️ Exportar Tabela por Órgão",
-            data=to_excel_bytes(tab_org_fmt, sheet_name="Indice_35_Por_Orgao"),
-            file_name=f"indice_35_contratos_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-            key="dl_ct_orgaos"
-        )
+        hdr_l, hdr_r = st.columns([3.2, 1.3])
+        with hdr_l:
+            st.markdown('<p class="sec-title">📋 Servidores por Órgão</p>', unsafe_allow_html=True)
+        with hdr_r:
+            st.download_button(
+                label="⬇️ Excel",
+                data=to_excel_bytes(tab_org_fmt, sheet_name="Indice_35_Por_Orgao"),
+                file_name=f"indice_35_contratos_{ano_sel}_{str(mes_sel).zfill(2)}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="dl_ct_orgaos"
+            )
 
-        st.dataframe(tab_org_fmt, use_container_width=True, hide_index=True, height=620)
+        st.dataframe(tab_org_fmt, use_container_width=True, hide_index=True, height=645)
 
     with col_dir:
         # Gráfico 1: Série Histórica dos Contratos Temporários vs Limite Máximo (35%)
-        st.subheader("📈 Série Histórica dos Contratos Temporários")
+        st.markdown('<p class="sec-title">📈 Série Histórica dos Contratos Temporários</p>', unsafe_allow_html=True)
 
         hist_ct = (
             df_hist.groupby("PERIODO", as_index=False)
@@ -939,36 +950,62 @@ def page_indice_35_contratos():
         )
         hist_ct["LIMITE_MAX"] = hist_ct["QTDE_EF"] * 0.35
 
+        # Exibe rótulos apenas em pontos espaçados (início, a cada 8 meses e último) para não poluir
+        n_pts = len(hist_ct)
+        indices_rotulo = {0, n_pts - 1}
+        if n_pts > 10:
+            indices_rotulo.update(range(0, n_pts, 8))
+
+        text_ct = [
+            fmt_int_br(v) if i in indices_rotulo else ""
+            for i, v in enumerate(hist_ct["QTDE_CT"])
+        ]
+        text_lim = [
+            fmt_int_br(v) if i in indices_rotulo else ""
+            for i, v in enumerate(hist_ct["LIMITE_MAX"])
+        ]
+
         fig_hist_ct = go.Figure()
         fig_hist_ct.add_trace(go.Scatter(
             x=hist_ct["PERIODO"],
             y=hist_ct["QTDE_CT"],
-            mode="lines+markers",
+            mode="lines+markers+text",
             name="Qtde de Contratos",
-            line=dict(color="#D2691E", width=2.5),
+            text=text_ct,
+            textposition="bottom center",
+            textfont=dict(size=9, color="#B8551A"),
+            line=dict(color="#D2691E", width=2.3),
             marker=dict(size=5)
         ))
         fig_hist_ct.add_trace(go.Scatter(
             x=hist_ct["PERIODO"],
             y=hist_ct["LIMITE_MAX"],
-            mode="lines+markers",
+            mode="lines+markers+text",
             name="Limite Máximo (35%)",
+            text=text_lim,
+            textposition="top center",
+            textfont=dict(size=9, color="#555555"),
             line=dict(color="#808080", width=2, dash="dash"),
             marker=dict(size=4)
         ))
+        y_max_hist = max(hist_ct["LIMITE_MAX"].max(), hist_ct["QTDE_CT"].max()) * 1.15
         fig_hist_ct.update_layout(
             plot_bgcolor="white",
             paper_bgcolor="white",
             hovermode="x unified",
-            xaxis_tickangle=-45,
+            xaxis=dict(tickangle=-45, nticks=15),
+            yaxis=dict(range=[0, y_max_hist], gridcolor="#eeeeee"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            margin=dict(l=0, r=10, t=30, b=0),
-            height=290
+            margin=dict(l=0, r=10, t=28, b=0),
+            height=265
         )
         st.plotly_chart(fig_hist_ct, use_container_width=True)
 
         # Gráfico 2: Qtde de contratos temporários por Órgão (Top 10 + Outros + TOTAL)
-        st.subheader(f"🏛️ Qtde de contratos temporários por Órgão ({mes_ref_texto})")
+        st.markdown(
+            f'<p class="sec-title" style="margin-top: 0.35rem;">🏛️ Contratos Temporários por Órgão ({mes_ref_texto})</p>',
+            unsafe_allow_html=True
+        )
 
         ct_positivos = tab_org[tab_org["QTDE_CT"] > 0].sort_values("QTDE_CT", ascending=False).copy()
 
@@ -1000,14 +1037,16 @@ def page_indice_35_contratos():
                 orientation="h",
                 text=df_barras_plot["ROTULO"],
                 textposition="outside",
+                textfont=dict(size=10, color="#333333"),
                 marker_color=cores
             ))
             fig_bar_ct.update_layout(
                 plot_bgcolor="white",
                 paper_bgcolor="white",
-                xaxis=dict(range=[0, df_barras_plot["QTDE_CT"].max() * 1.32], showticklabels=False),
-                margin=dict(l=0, r=20, t=10, b=0),
-                height=340
+                xaxis=dict(range=[0, df_barras_plot["QTDE_CT"].max() * 1.38], showticklabels=False, showgrid=False),
+                yaxis=dict(tickfont=dict(size=10)),
+                margin=dict(l=0, r=15, t=6, b=0),
+                height=345
             )
             st.plotly_chart(fig_bar_ct, use_container_width=True)
         else:
